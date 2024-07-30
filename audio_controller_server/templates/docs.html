@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Audio Controller API Documentation</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        line-height: 1.6;
+        color: #333;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+        background-color: #f4f4f4;
+      }
+      .container {
+        background-color: #fff;
+        border-radius: 5px;
+        padding: 20px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      }
+      h1 {
+        color: #2c3e50;
+        border-bottom: 2px solid #3498db;
+        padding-bottom: 10px;
+      }
+      h2 {
+        color: #2980b9;
+        margin-top: 30px;
+      }
+      .endpoint {
+        background-color: #ecf0f1;
+        border-left: 4px solid #3498db;
+        padding: 10px;
+        margin-bottom: 20px;
+      }
+      .method {
+        font-weight: bold;
+        color: #e74c3c;
+      }
+      .path {
+        font-family: monospace;
+        background-color: #e7e7e7;
+        padding: 2px 4px;
+        border-radius: 3px;
+      }
+      .description {
+        margin-top: 10px;
+      }
+      .parameters {
+        margin-top: 10px;
+      }
+      .parameter {
+        margin-left: 20px;
+      }
+      .example {
+        font-family: monospace;
+        background-color: #2c3e50;
+        color: #ecf0f1;
+        padding: 10px;
+        border-radius: 3px;
+        margin-top: 10px;
+      }
+      .notes {
+        background-color: #fdebd0;
+        border-left: 4px solid #f39c12;
+        padding: 10px;
+        margin-top: 30px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Audio Controller API Documentation</h1>
+
+      <h2>Endpoints</h2>
+
+      <h3>Audio Playback Control</h3>
+
+      <div class="endpoint">
+        <p>
+          <span class="method">POST</span> <span class="path">/play_audio</span>
+        </p>
+        <p class="description">Play an audio file</p>
+        <div class="parameters">
+          <p>Parameters:</p>
+          <p class="parameter">
+            <strong>file_name</strong> (query, required): Name of the audio file
+            to play
+          </p>
+        </div>
+        <p class="example">Example: POST /play_audio?file_name=song.mp3</p>
+      </div>
+
+      <div class="endpoint">
+        <p>
+          <span class="method">POST</span>
+          <span class="path">/pause_audio</span>
+        </p>
+        <p class="description">Pause the currently playing audio</p>
+        <p class="example">Example: POST /pause_audio</p>
+      </div>
+
+      <div class="endpoint">
+        <p>
+          <span class="method">POST</span> <span class="path">/stop_audio</span>
+        </p>
+        <p class="description">Stop the currently playing audio</p>
+        <p class="example">Example: POST /stop_audio</p>
+      </div>
+
+      <h3>Volume Control</h3>
+
+      <div class="endpoint">
+        <p>
+          <span class="method">POST</span>
+          <span class="path">/change_volume</span>
+        </p>
+        <p class="description">Change the volume of audio playback</p>
+        <div class="parameters">
+          <p>Parameters:</p>
+          <p class="parameter">
+            <strong>volume</strong> (body, required): New volume level (0.0 to
+            1.0)
+          </p>
+        </div>
+        <p class="example">Example: POST /change_volume with body 0.8</p>
+      </div>
+
+      <div class="endpoint">
+        <p>
+          <span class="method">GET</span> <span class="path">/get_volume</span>
+        </p>
+        <p class="description">Get the current volume level</p>
+        <p class="example">Example: GET /get_volume</p>
+      </div>
+
+      <h3>Audio File Management</h3>
+
+      <div class="endpoint">
+        <p>
+          <span class="method">GET</span>
+          <span class="path">/get_audio_files</span>
+        </p>
+        <p class="description">Get a list of all available audio files</p>
+        <p class="example">Example: GET /get_audio_files</p>
+      </div>
+
+      <div class="endpoint">
+        <p>
+          <span class="method">POST</span>
+          <span class="path">/receive_audio_file</span>
+        </p>
+        <p class="description">Upload a new audio file</p>
+        <div class="parameters">
+          <p>Parameters:</p>
+          <p class="parameter">
+            <strong>file_name</strong> (query, required): Name to give the
+            uploaded audio file
+          </p>
+          <p class="parameter">
+            <strong>file</strong> (body, required): The audio file content
+          </p>
+        </div>
+        <p class="example">
+          Example: POST /receive_audio_file?file_name=new_song.mp3 with file
+          content in body
+        </p>
+      </div>
+
+      <div class="endpoint">
+        <p>
+          <span class="method">DELETE</span>
+          <span class="path">/delete_audio_file</span>
+        </p>
+        <p class="description">Delete an audio file</p>
+        <div class="parameters">
+          <p>Parameters:</p>
+          <p class="parameter">
+            <strong>file_name</strong> (query, required): Name of the audio file
+            to delete
+          </p>
+        </div>
+        <p class="example">
+          Example: DELETE /delete_audio_file?file_name=old_song.mp3
+        </p>
+      </div>
+
+      <h3>Status</h3>
+
+      <div class="endpoint">
+        <p>
+          <span class="method">GET</span>
+          <span class="path">/get_audio_status</span>
+        </p>
+        <p class="description">Get the current status of audio playback</p>
+        <p class="example">Example: GET /get_audio_status</p>
+      </div>
+
+      <h3>Documentation</h3>
+
+      <div class="endpoint">
+        <p>
+          <span class="method">GET</span> <span class="path">/api-docs</span>
+        </p>
+        <p class="description">Get this API documentation</p>
+        <p class="example">Example: GET /api-docs</p>
+      </div>
+
+      <div class="notes">
+        <h2>Usage Notes</h2>
+        <ul>
+          <li>
+            All POST and DELETE requests should include appropriate headers
+            (e.g., <code>Content-Type: application/json</code> for JSON
+            payloads).
+          </li>
+          <li>
+            Ensure all file names are URL-encoded when used in query parameters.
+          </li>
+          <li>For file uploads, use multipart/form-data encoding.</li>
+        </ul>
+      </div>
+    </div>
+  </body>
+</html>
