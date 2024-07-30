@@ -226,7 +226,7 @@ impl ServerHandler {
     }
 
     async fn handle_api_docs() -> Result<impl warp::Reply, warp::Rejection> {
-        let content = include_str!("../../templates/docs.html");
+        let content = include_str!("../templates/docs.html");
         Ok(warp::reply::html(content))
     }
 }
