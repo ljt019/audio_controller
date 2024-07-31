@@ -94,7 +94,7 @@ export function AudioFileUploader() {
             ))}
         </FileUploaderContent>
       </FileUploader>
-      <Button onClick={handleSubmit} className="w-full">
+      <Button onClick={handleSubmit} disabled={!files} className="w-full">
         Upload Files
       </Button>
       {uploadStatus && <p className="text-sm text-center">{uploadStatus}</p>}

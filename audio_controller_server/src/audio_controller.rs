@@ -8,8 +8,8 @@ use tokio::time::{sleep, Duration};
 
 pub struct AudioController {
     pub volume: f32,
-    pub audio_status: String,
-    pub currently_playing_audio_file: Option<String>,
+    pub audio_status: Arc<Mutex<String>>,
+    pub currently_playing_audio_file: Arc<Mutex<Option<String>>>,
     sink: Arc<Mutex<Option<Sink>>>,
     _stream: Arc<OutputStream>,
     stream_handle: OutputStreamHandle,
@@ -21,8 +21,8 @@ impl AudioController {
         let sink = Sink::try_new(&stream_handle).unwrap();
         AudioController {
             volume: 0.5,
-            audio_status: "stopped".to_string(),
-            currently_playing_audio_file: None,
+            audio_status: Arc::new(Mutex::new("stopped".to_string())),
+            currently_playing_audio_file: Arc::new(Mutex::new(None)),
             sink: Arc::new(Mutex::new(Some(sink))),
             _stream: Arc::new(stream),
             stream_handle,
@@ -83,12 +83,20 @@ impl AudioController {
             sink.set_volume(self.volume);
             sink.play();
 
-            self.audio_status = "playing".to_string();
-            self.currently_playing_audio_file = Some(file_path.to_string());
+            {
+                let mut status = self.audio_status.lock().await;
+                *status = "playing".to_string();
+            }
+            {
+                let mut current_file = self.currently_playing_audio_file.lock().await;
+                *current_file = Some(file_path.to_string());
+            }
             println!("Audio playback started successfully");
 
             // Start a background task to update status when playback ends
             let sink_clone = Arc::clone(&self.sink);
+            let status_clone = Arc::clone(&self.audio_status);
+            let current_file_clone = Arc::clone(&self.currently_playing_audio_file);
             tokio::spawn(async move {
                 loop {
                     sleep(Duration::from_millis(100)).await;
@@ -96,6 +104,10 @@ impl AudioController {
                     if let Some(sink) = &*sink_guard {
                         if sink.empty() {
                             println!("Audio playback finished");
+                            let mut status = status_clone.lock().await;
+                            *status = "stopped".to_string();
+                            let mut current_file = current_file_clone.lock().await;
+                            *current_file = None;
                             break;
                         }
                     }
@@ -111,15 +123,18 @@ impl AudioController {
     pub async fn pause_audio(&mut self) {
         if let Some(sink) = &*self.sink.lock().await {
             sink.pause();
-            self.audio_status = "paused".to_string();
+            let mut status = self.audio_status.lock().await;
+            *status = "paused".to_string();
         }
     }
 
     pub async fn stop_audio(&mut self) {
         if let Some(sink) = &*self.sink.lock().await {
             sink.stop();
-            self.audio_status = "stopped".to_string();
-            self.currently_playing_audio_file = None;
+            let mut status = self.audio_status.lock().await;
+            *status = "stopped".to_string();
+            let mut current_file = self.currently_playing_audio_file.lock().await;
+            *current_file = None;
         }
     }
 
@@ -128,6 +143,22 @@ impl AudioController {
         if let Some(sink) = &*self.sink.lock().await {
             sink.set_volume(volume);
         }
+    }
+
+    pub async fn resume_audio(&mut self) {
+        if let Some(sink) = &*self.sink.lock().await {
+            sink.play();
+            let mut status = self.audio_status.lock().await;
+            *status = "playing".to_string();
+        }
+    }
+
+    pub async fn get_current_audio(&self) -> Option<String> {
+        self.currently_playing_audio_file.lock().await.clone()
+    }
+
+    pub async fn get_audio_status(&self) -> String {
+        self.audio_status.lock().await.clone()
     }
 }
 

@@ -14,7 +14,7 @@ import usePlayAudioFile from "@/hooks/usePlayAudioFile";
 import useDeleteAudioFile from "@/hooks/useDeleteAudioFile";
 
 export const Route = createLazyFileRoute("/audio_files")({
-  component: () => <AudioFilePage />,
+  component: AudioFilePage,
 });
 
 function AudioFilePage() {

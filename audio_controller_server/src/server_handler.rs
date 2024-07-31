@@ -1,5 +1,6 @@
 use crate::audio_controller::AudioController;
 use crate::audio_file_controller::AudioFileController;
+use serde_json::json;
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::Mutex;
@@ -115,6 +116,22 @@ impl ServerHandler {
             .and(warp::get())
             .and_then(Self::handle_api_docs);
 
+        let resume_audio = warp::path("resume_audio")
+            .and(warp::post())
+            .and(with_controllers(
+                audio_controller.clone(),
+                file_controller.clone(),
+            ))
+            .and_then(Self::handle_resume_audio);
+
+        let get_current_audio = warp::path("get_current_audio")
+            .and(warp::get())
+            .and(with_controllers(
+                audio_controller.clone(),
+                file_controller.clone(),
+            ))
+            .and_then(Self::handle_get_current_audio);
+
         play_audio
             .or(pause_audio)
             .or(stop_audio)
@@ -125,6 +142,8 @@ impl ServerHandler {
             .or(receive_audio_file)
             .or(delete_audio_file)
             .or(api_docs)
+            .or(resume_audio)
+            .or(get_current_audio)
             .with(cors)
     }
 
@@ -192,13 +211,6 @@ impl ServerHandler {
         Ok(warp::reply::json(&controller.volume))
     }
 
-    async fn handle_get_audio_status(
-        (audio_controller, _): (Arc<Mutex<AudioController>>, Arc<AudioFileController>),
-    ) -> Result<impl warp::Reply, warp::Rejection> {
-        let controller = audio_controller.lock().await;
-        Ok(warp::reply::json(&controller.audio_status))
-    }
-
     async fn handle_receive_audio_file(
         file_content: bytes::Bytes,
         params: HashMap<String, String>,
@@ -237,6 +249,32 @@ impl ServerHandler {
     async fn handle_api_docs() -> Result<impl warp::Reply, warp::Rejection> {
         let content = include_str!("../templates/docs.html");
         Ok(warp::reply::html(content))
+    }
+
+    async fn handle_resume_audio(
+        (audio_controller, _): (Arc<Mutex<AudioController>>, Arc<AudioFileController>),
+    ) -> Result<impl warp::Reply, warp::Rejection> {
+        let mut controller = audio_controller.lock().await;
+        controller.resume_audio().await;
+        Ok(warp::reply::json(&"Resuming audio"))
+    }
+
+    async fn handle_get_audio_status(
+        (audio_controller, _): (Arc<Mutex<AudioController>>, Arc<AudioFileController>),
+    ) -> Result<impl warp::Reply, warp::Rejection> {
+        let controller = audio_controller.lock().await;
+        let status = controller.get_audio_status().await;
+        Ok(warp::reply::json(&json!({ "status": status })))
+    }
+
+    async fn handle_get_current_audio(
+        (audio_controller, _): (Arc<Mutex<AudioController>>, Arc<AudioFileController>),
+    ) -> Result<impl warp::Reply, warp::Rejection> {
+        let controller = audio_controller.lock().await;
+        let current_audio = controller.get_current_audio().await;
+        Ok(warp::reply::json(
+            &json!({ "current_audio": current_audio }),
+        ))
     }
 }
 

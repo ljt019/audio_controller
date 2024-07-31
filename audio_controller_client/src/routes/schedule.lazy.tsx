@@ -1,10 +1,10 @@
 import { createLazyFileRoute } from "@tanstack/react-router";
 
 export const Route = createLazyFileRoute("/schedule")({
-  component: Index,
+  component: Schedule,
 });
 
-function Index() {
+function Schedule() {
   return (
     <div className="p-2">
       <h3>Welcome Home schedule!</h3>
