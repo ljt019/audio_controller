@@ -1,6 +1,7 @@
 use rodio::{Decoder, OutputStream, OutputStreamHandle, Sink};
 use std::fs::File;
 use std::io::BufReader;
+use std::path::Path;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use tokio::time::{sleep, Duration};
@@ -28,14 +29,52 @@ impl AudioController {
         }
     }
 
-    pub async fn play_audio(&mut self, file_path: &str) {
+    pub async fn play_audio(&mut self, file_path: &str) -> Result<(), String> {
         println!("Attempting to play audio: {}", file_path);
 
-        let file = BufReader::new(File::open(file_path).unwrap());
-        let source = Decoder::new(file).unwrap();
+        let path = Path::new(file_path);
+        let extension = path
+            .extension()
+            .and_then(|os_str| os_str.to_str())
+            .unwrap_or("");
+        println!("File extension: {}", extension);
+
+        let file = match File::open(file_path) {
+            Ok(file) => file,
+            Err(e) => return Err(format!("Failed to open file: {}", e)),
+        };
+
+        let buffer = BufReader::new(file);
+
+        let source = match Decoder::new(buffer) {
+            Ok(source) => source,
+            Err(e) => {
+                println!("Failed to decode with default decoder: {}", e);
+                if extension.eq_ignore_ascii_case("wav") {
+                    println!("Attempting to use WAV-specific decoder");
+                    let file = match File::open(file_path) {
+                        Ok(file) => file,
+                        Err(e) => return Err(format!("Failed to open WAV file: {}", e)),
+                    };
+                    match rodio::Decoder::new_wav(BufReader::new(file)) {
+                        Ok(source) => {
+                            println!("Successfully decoded WAV file");
+                            source
+                        }
+                        Err(e) => {
+                            println!("Failed to decode WAV file: {}", e);
+                            return Err(format!("Failed to decode WAV file: {}", e));
+                        }
+                    }
+                } else {
+                    return Err(format!("Failed to decode audio file: {}", e));
+                }
+            }
+        };
 
         let mut sink_guard = self.sink.lock().await;
         if sink_guard.is_none() {
+            println!("Creating new Sink");
             *sink_guard = Some(Sink::try_new(&self.stream_handle).unwrap());
         }
 
@@ -62,6 +101,10 @@ impl AudioController {
                     }
                 }
             });
+
+            Ok(())
+        } else {
+            Err("Failed to create audio sink".to_string())
         }
     }
 

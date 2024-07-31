@@ -3,6 +3,7 @@ use crate::audio_file_controller::AudioFileController;
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::Mutex;
+use warp::http::Method;
 use warp::Filter;
 
 pub struct ServerHandler {
@@ -27,6 +28,11 @@ impl ServerHandler {
     ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
         let audio_controller = self.audio_controller.clone();
         let file_controller = self.file_controller.clone();
+
+        let cors = warp::cors()
+            .allow_any_origin()
+            .allow_headers(vec!["Content-Type", "Authorization"])
+            .allow_methods(&[Method::GET, Method::POST, Method::DELETE]);
 
         let play_audio = warp::path("play_audio")
             .and(warp::post())
@@ -119,6 +125,7 @@ impl ServerHandler {
             .or(receive_audio_file)
             .or(delete_audio_file)
             .or(api_docs)
+            .with(cors)
     }
 
     async fn handle_play_audio(
@@ -132,13 +139,15 @@ impl ServerHandler {
             if file_controller.file_exists(file_name) {
                 let file_path = file_controller.get_file_path(file_name);
                 let mut controller = audio_controller.lock().await;
-                controller.play_audio(file_path.to_str().unwrap()).await;
-                Ok(warp::reply::json(&format!("Playing audio: {}", file_name)))
+                match controller.play_audio(file_path.to_str().unwrap()).await {
+                    Ok(_) => Ok(warp::reply::json(&format!("Playing audio: {}", file_name))),
+                    Err(e) => Ok(warp::reply::json(&format!("Error playing audio: {}", e))),
+                }
             } else {
-                Err(warp::reject::custom(FileNotFound))
+                Ok(warp::reply::json(&format!("File not found: {}", file_name)))
             }
         } else {
-            Err(warp::reject::custom(BadRequest))
+            Ok(warp::reply::json(&"Missing file_name parameter"))
         }
     }
 
